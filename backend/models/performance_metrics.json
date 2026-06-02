@@ -1,0 +1,26 @@
+{
+  "anxiety": {
+    "auc_groupkfold": 0.92,
+    "f1_groupkfold": 0.806,
+    "recall_groupkfold": 0.802,
+    "precision_groupkfold": 0.827,
+    "n_patients": 40,
+    "positive_prevalence": 0.39,
+    "evaluable_for_personalization": 23
+  },
+  "panic": {
+    "auc_stratifiedkfold": 0.906,
+    "auc_groupkfold": 0.669,
+    "f1_groupkfold": 0.14,
+    "auc_inflation_pct": 27.3,
+    "n_patients": 19,
+    "positive_prevalence": 0.064
+  },
+  "methodology_critique": {
+    "original_paper_auc": 0.905,
+    "replication_auc": 0.906,
+    "groupkfold_auc": 0.646,
+    "inflation_pct": 27.3,
+    "patient_overlap_stratified_pct": 95
+  }
+}

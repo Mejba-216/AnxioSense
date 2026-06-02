@@ -1,0 +1,262 @@
+[
+  {
+    "feature": "annoying",
+    "importance": 0.9440164122535456
+  },
+  {
+    "feature": "CTQ_5",
+    "importance": 0.7717757809744795
+  },
+  {
+    "feature": "KRQ",
+    "importance": 0.7484296644503426
+  },
+  {
+    "feature": "STAI_X2",
+    "importance": 0.7467397771189858
+  },
+  {
+    "feature": "CTQ_2",
+    "importance": 0.6818275945730985
+  },
+  {
+    "feature": "negative",
+    "importance": 0.6755600605113903
+  },
+  {
+    "feature": "CTQ_1",
+    "importance": 0.6646849953456871
+  },
+  {
+    "feature": "CTQ_3",
+    "importance": 0.5634694152584063
+  },
+  {
+    "feature": "negative_E",
+    "importance": 0.5058509378542538
+  },
+  {
+    "feature": "positive_feeling",
+    "importance": 0.503316012246324
+  },
+  {
+    "feature": "smoking",
+    "importance": 0.4666411000258092
+  },
+  {
+    "feature": "marriage",
+    "importance": 0.4513126694469057
+  },
+  {
+    "feature": "SPAQ_2",
+    "importance": 0.3859119212805631
+  },
+  {
+    "feature": "bandpower(0.00005-0.00001Hz)",
+    "importance": 0.3754504656292007
+  },
+  {
+    "feature": "MDQ",
+    "importance": 0.36070601132865115
+  },
+  {
+    "feature": "age_encoded",
+    "importance": 0.3593119127790708
+  },
+  {
+    "feature": "BRIAN",
+    "importance": 0.3030228116673695
+  },
+  {
+    "feature": "HR_mesor",
+    "importance": 0.30286551523517746
+  },
+  {
+    "feature": "suicideHx",
+    "importance": 0.2889139166595138
+  },
+  {
+    "feature": "SPAQ_1",
+    "importance": 0.27305538841614796
+  },
+  {
+    "feature": "HR_mean",
+    "importance": 0.2572469734020662
+  },
+  {
+    "feature": "suicide_need",
+    "importance": 0.23833728229458762
+  },
+  {
+    "feature": "bandpower(0.001-0.0005Hz)",
+    "importance": 0.22071216882974937
+  },
+  {
+    "feature": "smkHx",
+    "importance": 0.18706397700603655
+  },
+  {
+    "feature": "CSM",
+    "importance": 0.16168776399271678
+  },
+  {
+    "feature": "bandpower(0.0001-0.00005Hz)",
+    "importance": 0.1464222037617242
+  },
+  {
+    "feature": "drinkHx",
+    "importance": 0.13678425772629124
+  },
+  {
+    "feature": "HR_hvar_mean",
+    "importance": 0.12972680815765747
+  },
+  {
+    "feature": "coffee",
+    "importance": 0.12868530235228273
+  },
+  {
+    "feature": "HR_acrophase",
+    "importance": 0.12598542088961207
+  },
+  {
+    "feature": "job",
+    "importance": 0.12402592860955126
+  },
+  {
+    "feature": "HR_max",
+    "importance": 0.11998674511144952
+  },
+  {
+    "feature": "HR_mesor_difference",
+    "importance": 0.10263197857336856
+  },
+  {
+    "feature": "foot_var",
+    "importance": 0.06823358911121982
+  },
+  {
+    "feature": "alcohol",
+    "importance": 0.06732017604286768
+  },
+  {
+    "feature": "APPQ_1",
+    "importance": 0.060246579988569915
+  },
+  {
+    "feature": "HR_mesor_difference_2d",
+    "importance": 0.05285911680699606
+  },
+  {
+    "feature": "bandpower(0.0005-0.0001Hz)",
+    "importance": 0.04933295787460354
+  },
+  {
+    "feature": "APPQ_3",
+    "importance": 0.04819959747879181
+  },
+  {
+    "feature": "HR_amplitude_difference_2d",
+    "importance": 0.04635595481161736
+  },
+  {
+    "feature": "HR_amplitude_difference",
+    "importance": 0.04399187414047458
+  },
+  {
+    "feature": "APPQ_2",
+    "importance": 0.040822836525644106
+  },
+  {
+    "feature": "exercise",
+    "importance": 0.037046514985216175
+  },
+  {
+    "feature": "sleep_duration",
+    "importance": 0.035718495898505204
+  },
+  {
+    "feature": "steps_mean",
+    "importance": 0.035364256616976876
+  },
+  {
+    "feature": "HR_var",
+    "importance": 0.03133626489144479
+  },
+  {
+    "feature": "sleep_out_time",
+    "importance": 0.02623229880567028
+  },
+  {
+    "feature": "HR_acrophase_difference",
+    "importance": 0.025302093984144316
+  },
+  {
+    "feature": "steps_maximum",
+    "importance": 0.023148170140217084
+  },
+  {
+    "feature": "GAD_7",
+    "importance": 0.02312173041762428
+  },
+  {
+    "feature": "BSQ",
+    "importance": 0.021616548572783778
+  },
+  {
+    "feature": "steps_hvar_mean",
+    "importance": 0.02071033516668406
+  },
+  {
+    "feature": "STAI_X1",
+    "importance": 0.017950850314307917
+  },
+  {
+    "feature": "menstruation",
+    "importance": 0.01732595097098943
+  },
+  {
+    "feature": "HR_acrophase_difference_2d",
+    "importance": 0.01654431173052573
+  },
+  {
+    "feature": "positive_E",
+    "importance": 0.015932383113035256
+  },
+  {
+    "feature": "PHQ_9",
+    "importance": 0.010344545622091753
+  },
+  {
+    "feature": "HR_amplitude",
+    "importance": 0.009388302966626044
+  },
+  {
+    "feature": "CES_D",
+    "importance": 0.007140479111966537
+  },
+  {
+    "feature": "ACQ",
+    "importance": 0.004042147799049217
+  },
+  {
+    "feature": "KOSSSF",
+    "importance": 0.003613757770871262
+  },
+  {
+    "feature": "sleep_onset_time",
+    "importance": 0.0035666995011876474
+  },
+  {
+    "feature": "BFNE",
+    "importance": 0.0024718753151419747
+  },
+  {
+    "feature": "SADS",
+    "importance": 0.0014388977264385599
+  },
+  {
+    "feature": "CTQ_4",
+    "importance": 0.0013747523548889797
+  }
+]
