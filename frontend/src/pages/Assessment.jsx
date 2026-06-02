@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, ArrowLeft, Loader2, Check } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { explainPrediction } from '../api/predictor'
+import { explainPrediction, predictPersonalized } from '../api/predictor'
+import { useAuth } from '../api/AuthContext'
 
 // ──────────────────────────────────────────────────────────────────────
 // SECTION 1: PHQ-9 (Depression) — 9 questions, scored 0-3 each, total 0-27
@@ -212,7 +213,7 @@ export default function Assessment() {
   const [answers, setAnswers] = useState({})  // Stores raw answers per question
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
-
+  const { user } = useAuth()
   const step = STEPS[stepIdx]
   const progress = ((stepIdx + 1) / STEPS.length) * 100
 
@@ -270,19 +271,34 @@ export default function Assessment() {
     return true
   }
 
-  const handleSubmit = async () => {
-    setSubmitting(true)
-    setError(null)
-    try {
-      const result = await explainPrediction(buildModelInput())
-      sessionStorage.setItem('mira_result', JSON.stringify(result))
-      navigate('/results')
-    } catch (e) {
-      setError(e?.response?.data?.detail || 'Backend not reachable. Is it running on port 8000?')
-      setSubmitting(false)
+const handleSubmit = async () => {
+  setSubmitting(true)
+  setError(null)
+  try {
+    const inputs = buildModelInput()
+    
+    // Always get the explanation (SHAP)
+    const result = await explainPrediction(inputs)
+    
+    // If logged in, also get personalized prediction
+    let personalized = null
+    if (user) {
+      try {
+        personalized = await predictPersonalized(inputs)
+      } catch (e) {
+        console.warn('Personalization failed:', e)
+      }
     }
+    
+    sessionStorage.setItem('mira_result', JSON.stringify(result))
+    sessionStorage.setItem('mira_personalized', personalized ? JSON.stringify(personalized) : '')
+    
+    navigate('/results')
+  } catch (e) {
+    setError(e?.response?.data?.detail || 'Backend not reachable. Is it running on port 8000?')
+    setSubmitting(false)
   }
-
+}
   return (
     <div className="bg-cream min-h-screen">
       {/* Progress bar */}

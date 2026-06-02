@@ -1,15 +1,5 @@
 {
-  "core_features": [
-    "PHQ_9",
-    "GAD_7",
-    "CES_D",
-    "STAI_X2",
-    "CTQ_2",
-    "BRIAN",
-    "BSQ",
-    "ACQ",
-    "suicideHx"
-  ],
-  "sigma": 3.1722471283979154,
+  "core_features": ["PHQ_9", "GAD_7", "CES_D", "STAI_X2", "CTQ_2", "BRIAN", "BSQ", "ACQ", "suicideHx"],
+  "sigma": 3.0,
   "n_patients": 43
 }

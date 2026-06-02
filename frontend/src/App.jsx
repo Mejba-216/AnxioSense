@@ -7,6 +7,8 @@ import Results from './pages/Results'
 import About from './pages/About'
 import Methodology from './pages/Methodology'
 import Privacy from './pages/Privacy'
+import Login from './pages/Login'
+import Register from './pages/Register'
 
 function App() {
   return (
@@ -20,6 +22,8 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/methodology" element={<Methodology />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Routes>
       </main>
       <Footer />

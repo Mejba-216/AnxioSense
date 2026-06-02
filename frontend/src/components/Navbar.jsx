@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { Menu, X } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Menu, X, LogOut, User } from 'lucide-react'
+import { useAuth } from '../api/AuthContext'
 
 const links = [
   { to: '/assessment', label: 'Assessment' },
@@ -12,7 +13,10 @@ const links = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -20,7 +24,15 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  useEffect(() => { setOpen(false) }, [location])
+  useEffect(() => {
+    setOpen(false)
+    setMenuOpen(false)
+  }, [location])
+
+  const handleLogout = () => {
+    logout()
+    navigate('/')
+  }
 
   return (
     <header className={`sticky top-0 z-50 transition-all duration-300 ${
@@ -53,7 +65,39 @@ export default function Navbar() {
                 </Link>
               )
             })}
-            <Link to="/assessment" className="btn-primary text-xs">Begin</Link>
+            
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  className="flex items-center gap-2 px-4 py-2 border border-ink-300 hover:border-ink-900 transition"
+                >
+                  <User size={14} />
+                  <span className="text-sm">{user.name || user.email.split('@')[0]}</span>
+                </button>
+                {menuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-cream border border-ink-200 shadow-lg">
+                    <div className="p-4 border-b border-ink-200">
+                      <p className="text-xs text-ink-500">Signed in as</p>
+                      <p className="text-sm text-ink-900 truncate">{user.email}</p>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full px-4 py-3 text-left text-sm text-ink-700 hover:bg-ink-50 flex items-center gap-2"
+                    >
+                      <LogOut size={14} /> Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link to="/login" className="text-sm font-medium text-ink-500 hover:text-ink-900">
+                  Sign in
+                </Link>
+                <Link to="/register" className="btn-primary text-xs">Get started</Link>
+              </>
+            )}
           </nav>
 
           <button className="md:hidden p-2" onClick={() => setOpen(!open)}>
@@ -69,9 +113,25 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
-              <Link to="/assessment" className="btn-primary text-xs justify-center mt-2">
-                Begin Assessment
-              </Link>
+              {user ? (
+                <>
+                  <div className="pt-2 border-t border-ink-200">
+                    <p className="text-xs text-ink-500">Signed in as {user.email}</p>
+                  </div>
+                  <button onClick={handleLogout} className="btn-secondary justify-center mt-2">
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" className="btn-secondary text-xs justify-center mt-2">
+                    Sign in
+                  </Link>
+                  <Link to="/register" className="btn-primary text-xs justify-center">
+                    Get started
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
         )}

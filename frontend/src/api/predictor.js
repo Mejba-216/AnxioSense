@@ -18,6 +18,11 @@ export async function explainPrediction(inputs, topN = 10) {
   return data
 }
 
+export async function predictPersonalized(inputs, topN = 10) {
+  const { data } = await client.post(`/predict-personalized?top_n=${topN}`, inputs)
+  return data
+}
+
 export async function getFeatures() {
   const { data } = await client.get('/features')
   return data
@@ -32,3 +37,5 @@ export async function checkHealth() {
   const { data } = await client.get('/health')
   return data
 }
+
+export default client

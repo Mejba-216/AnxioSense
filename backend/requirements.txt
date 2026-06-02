@@ -8,3 +8,7 @@ pandas
 imbalanced-learn
 pydantic
 python-multipart
+python-jose[cryptography]
+bcrypt
+sqlalchemy
+email-validator
