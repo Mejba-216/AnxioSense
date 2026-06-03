@@ -28,7 +28,13 @@ ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
     "http://127.0.0.1:5173",
+    "https://*.vercel.app",  # Wildcard for Vercel preview deployments
 ]
+# Also add this AFTER the ALLOWED_ORIGINS list:
+import os
+PRODUCTION_FRONTEND = os.getenv("FRONTEND_URL")
+if PRODUCTION_FRONTEND:
+    ALLOWED_ORIGINS.append(PRODUCTION_FRONTEND)
 
 MODELS = {}
 
@@ -96,6 +102,7 @@ app = FastAPI(title="Mira API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
