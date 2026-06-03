@@ -67,7 +67,15 @@ def load_artifacts():
             MODELS['personalization_config'] = json.load(f)
         MODELS['profile_mean'] = np.load(MODELS_DIR / 'profile_mean.npy')
         MODELS['profile_std'] = np.load(MODELS_DIR / 'profile_std.npy')
-        print(f"Personalization loaded: {len(MODELS['patient_profiles'])} patient profiles")
+        
+        # NEW: Load per-patient calibration data
+        with open(MODELS_DIR / 'patient_calibration_data.json') as f:
+            MODELS['patient_calibration_data'] = json.load(f)
+        
+        eligible = sum(1 for d in MODELS['patient_calibration_data'].values() 
+                       if len(d['predictions']) >= 4)
+        print(f"Personalization loaded: {len(MODELS['patient_profiles'])} patient profiles, "
+              f"{eligible} eligible for PS-Cal (≥4 observations)")
     except FileNotFoundError as e:
         print(f"WARNING: Personalization files missing: {e}")
     
@@ -357,10 +365,23 @@ def explain(inputs: FeatureInputs, top_n: int = 10):
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
 #Personalization
+
 @app.post("/predict-personalized")
 def predict_personalized(inputs: FeatureInputs, top_n: int = 10):
+    """
+    Selective Patient-Similarity Calibration with heuristic gatekeeper.
+    
+    Gatekeeper rules (validated by negative result on trained meta-classifier):
+    1. At least 5 similar patients with calibration data
+    2. Average similarity >= 0.70 (profile close to training cohort)
+    3. Calibration data has outcome variation (can fit Isotonic)
+    4. Adjustment >= 0.05 (meaningful effect, not noise)
+    """
     try:
+        from sklearn.isotonic import IsotonicRegression
+        
         X = build_feature_vector(inputs)
         X_scaled = MODELS['anxiety_scaler'].transform(X)
         global_prob = float(MODELS['anxiety_model'].predict_proba(X_scaled)[0][1])
@@ -368,28 +389,34 @@ def predict_personalized(inputs: FeatureInputs, top_n: int = 10):
         config = MODELS.get('personalization_config', {})
         core_features = config.get('core_features', [])
         patient_profiles = MODELS.get('patient_profiles', {})
+        calibration_data = MODELS.get('patient_calibration_data', {})
         
-        if not core_features or not patient_profiles:
-            return {
-                "global_probability": round(global_prob, 4),
-                "personalized_probability": round(global_prob, 4),
-                "adjustment": 0.0,
-                "personalization_available": False,
-                "meaningful_adjustment": False,
-                "similar_patients_count": 0,
-                "max_similarity": 0.0,
-                "avg_similarity": 0.0,
-                "message": "Personalization data not available."
-            }
+        default_response = {
+            "global_probability": round(global_prob, 4),
+            "personalized_probability": round(global_prob, 4),
+            "recommended_probability": round(global_prob, 4),
+            "recommended_method": "global",
+            "adjustment": 0.0,
+            "personalization_available": False,
+            "use_personalization": False,
+            "gatekeeper_reason": "Insufficient data for personalization",
+            "effect_level": "Unavailable",
+            "similar_patients_count": 0,
+            "calibration_observations": 0,
+            "max_similarity": 0.0,
+            "avg_similarity": 0.0,
+        }
         
+        if not core_features or not patient_profiles or not calibration_data:
+            return {**default_response, "interpretation": "Personalization data not available."}
+        
+        # Build profile (with scale normalization)
         input_dict = inputs.dict(exclude_none=False)
         metadata = MODELS['feature_metadata']
-        
         SCALE_FACTORS = {
             'PHQ_9': 27.0, 'GAD_7': 21.0, 'CES_D': 60.0,
             'CTQ_2': 25.0, 'BSQ': 100.0, 'ACQ': 100.0,
         }
-        
         profile = []
         for feat in core_features:
             if feat in input_dict and input_dict[feat] is not None:
@@ -408,11 +435,16 @@ def predict_personalized(inputs: FeatureInputs, top_n: int = 10):
         profile_std = np.where(profile_std < 1e-8, 1.0, profile_std)
         profile_norm = (profile - profile_mean) / profile_std
         
-        sigma = 3.0  # Tighter kernel — more variation between patients
+        sigma = 3.0
         
+        # Compute similarities
         similarities = []
         for pid, p in patient_profiles.items():
             try:
+                if pid not in calibration_data:
+                    continue
+                if len(calibration_data[pid]['predictions']) < 4:
+                    continue
                 p_vec = np.array([float(p[f]) for f in core_features], dtype=float)
                 p_norm = (p_vec - profile_mean) / profile_std
                 diff = profile_norm - p_norm
@@ -421,62 +453,139 @@ def predict_personalized(inputs: FeatureInputs, top_n: int = 10):
                     continue
                 sim = float(np.exp(-dist_sq / (2 * sigma ** 2)))
                 if np.isfinite(sim):
-                    similarities.append((pid, sim, dist_sq))
+                    similarities.append((pid, sim))
             except (KeyError, ValueError, TypeError):
                 continue
         
-        if not similarities:
+        # ── GATEKEEPER RULE 1: Need at least 5 similar patients ──
+        if len(similarities) < 5:
             return {
-                "global_probability": round(global_prob, 4),
-                "personalized_probability": round(global_prob, 4),
-                "adjustment": 0.0,
-                "personalization_available": False,
-                "meaningful_adjustment": False,
-                "similar_patients_count": 0,
-                "max_similarity": 0.0,
-                "avg_similarity": 0.0,
-                "message": "Could not compute patient similarities."
+                **default_response,
+                "gatekeeper_reason": f"Only {len(similarities)} similar patients found (rule: ≥5 required)",
+                "interpretation": "Not enough similar patients in our cohort. Using standard prediction."
             }
         
         similarities.sort(key=lambda x: -x[1])
-        top_similar = similarities[:5]
-        max_sim = top_similar[0][1]
-        avg_sim = float(np.mean([s[1] for s in top_similar]))
-
-        # Convert similarity to a percentile match
-        all_sims = [s[1] for s in similarities]
-        rank = sum(1 for s in all_sims if s < max_sim) / len(all_sims)
-        match_percentile = round(rank * 100)
+        K = min(10, len(similarities))
+        top_k = similarities[:K]
+        max_sim = top_k[0][1]
+        avg_sim = float(np.mean([s for _, s in top_k]))
         
-        # PS-Cal adjustment
-        adjustment_strength = float(np.clip(avg_sim, 0, 1))
+        # ── GATEKEEPER RULE 2: Average similarity must be >= 70% ──
+        if avg_sim < 0.70:
+            return {
+                **default_response,
+                "personalization_available": True,
+                "use_personalization": False,
+                "similar_patients_count": K,
+                "max_similarity": round(max_sim, 4),
+                "avg_similarity": round(avg_sim, 4),
+                "gatekeeper_reason": f"Profile is atypical (avg similarity {round(avg_sim*100)}%, rule: ≥70%)",
+                "interpretation": (
+                    f"Your profile is somewhat atypical (only {round(avg_sim*100)}% similarity to nearest patients). "
+                    "Personalization would be unreliable. Using standard prediction."
+                )
+            }
         
-        if global_prob > 0.5:
-            personalized_prob = global_prob + (adjustment_strength * (1 - global_prob) * 0.25)
-        else:
-            personalized_prob = global_prob - (adjustment_strength * global_prob * 0.25)
+        # Build calibration set
+        all_predictions, all_outcomes, all_weights = [], [], []
+        for pid, sim in top_k:
+            cal = calibration_data[pid]
+            for pred, out in zip(cal['predictions'], cal['outcomes']):
+                all_predictions.append(pred)
+                all_outcomes.append(out)
+                all_weights.append(sim)
         
-        personalized_prob = float(np.clip(personalized_prob, 0.01, 0.99))
+        all_predictions = np.array(all_predictions, dtype=float)
+        all_outcomes = np.array(all_outcomes, dtype=float)
+        all_weights = np.array(all_weights, dtype=float)
+        
+        # ── GATEKEEPER RULE 3: Need outcome variation ──
+        if all_outcomes.sum() == 0 or all_outcomes.sum() == len(all_outcomes):
+            return {
+                **default_response,
+                "personalization_available": True,
+                "use_personalization": False,
+                "similar_patients_count": K,
+                "max_similarity": round(max_sim, 4),
+                "avg_similarity": round(avg_sim, 4),
+                "gatekeeper_reason": "Similar patients had uniform outcomes (no learnable signal)",
+                "interpretation": "Standard prediction is most reliable for your profile."
+            }
+        
+        # Fit Isotonic Regression
+        try:
+            iso = IsotonicRegression(out_of_bounds='clip', y_min=0.001, y_max=0.999)
+            iso.fit(all_predictions, all_outcomes, sample_weight=all_weights)
+            personalized_prob = float(iso.predict([global_prob])[0])
+            personalized_prob = float(np.clip(personalized_prob, 0.01, 0.99))
+        except Exception:
+            return {
+                **default_response,
+                "personalization_available": True,
+                "use_personalization": False,
+                "similar_patients_count": K,
+                "max_similarity": round(max_sim, 4),
+                "avg_similarity": round(avg_sim, 4),
+                "gatekeeper_reason": "Calibration fit failed",
+                "interpretation": "Using standard prediction."
+            }
+        
         adjustment = personalized_prob - global_prob
-        meaningful = abs(adjustment) >= 0.02
+        abs_adj = abs(adjustment)
+        
+        # ── GATEKEEPER RULE 4: Adjustment must be ≥ 5% ──
+        if abs_adj < 0.05:
+            return {
+                "global_probability": round(global_prob, 4),
+                "personalized_probability": round(personalized_prob, 4),
+                "recommended_probability": round(global_prob, 4),
+                "recommended_method": "global",
+                "adjustment": round(adjustment, 4),
+                "personalization_available": True,
+                "use_personalization": False,
+                "effect_level": "Minimal",
+                "similar_patients_count": K,
+                "calibration_observations": len(all_predictions),
+                "max_similarity": round(max_sim, 4),
+                "avg_similarity": round(avg_sim, 4),
+                "gatekeeper_reason": f"Adjustment too small ({round(abs_adj*100)}%, rule: ≥5%)",
+                "interpretation": (
+                    f"Your profile is similar to {K} patients ({len(all_predictions)} observations). "
+                    f"Personalization would change the prediction by only {round(abs_adj*100)}% — "
+                    f"below our reliability threshold. Using standard prediction."
+                )
+            }
+        
+        # ── ALL GATEKEEPER RULES PASSED: Use personalized ──
+        if abs_adj >= 0.10:
+            effect_level = "Large"
+        elif abs_adj >= 0.05:
+            effect_level = "Moderate"
+        
+        direction = "UNDER-estimating" if adjustment > 0 else "OVER-estimating"
         
         return {
             "global_probability": round(global_prob, 4),
             "personalized_probability": round(personalized_prob, 4),
+            "recommended_probability": round(personalized_prob, 4),
+            "recommended_method": "personalized",
             "adjustment": round(adjustment, 4),
             "personalization_available": True,
-            "meaningful_adjustment": meaningful,
-            "similar_patients_count": len(top_similar),
+            "use_personalization": True,
+            "effect_level": effect_level,
+            "similar_patients_count": K,
+            "calibration_observations": len(all_predictions),
             "max_similarity": round(max_sim, 4),
             "avg_similarity": round(avg_sim, 4),
-            "match_percentile": match_percentile,
+            "gatekeeper_reason": (
+                f"All checks passed: {K} similar patients "
+                f"({round(avg_sim*100)}% match), {effect_level.lower()} adjustment."
+            ),
             "interpretation": (
-                f"Your profile closely matches {len(top_similar)} patients from our database. "
-                "The personalized prediction adjusts the standard estimate based on "
-                "calibration patterns from these similar patients."
-                if meaningful else
-                "Personalization provides minimal adjustment for your profile. "
-                "The standard prediction is the most reliable estimate."
+                f"Based on outcomes from {K} similar patients ({len(all_predictions)} observations), "
+                f"the standard model may be {direction} your risk by {round(abs_adj*100)}%. "
+                f"The personalized estimate is more reliable for your profile."
             )
         }
     except Exception as e:

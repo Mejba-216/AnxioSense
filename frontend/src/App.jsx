@@ -9,10 +9,12 @@ import Methodology from './pages/Methodology'
 import Privacy from './pages/Privacy'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import ScrollToTop from './components/ScrollToTop'
 
 function App() {
   return (
     <div className="min-h-screen flex flex-col bg-cream">
+      <ScrollToTop />
       <Navbar />
       <main className="flex-1">
         <Routes>

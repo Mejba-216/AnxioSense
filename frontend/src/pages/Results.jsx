@@ -12,31 +12,38 @@ export default function Results() {
   const [viewMode, setViewMode] = useState('standard')
 
   useEffect(() => {
-    const stored = sessionStorage.getItem('mira_result')
-    if (!stored) {
-      navigate('/assessment')
-      return
-    }
-    setResult(JSON.parse(stored))
-    
-    const pers = sessionStorage.getItem('mira_personalized')
-    if (pers && pers !== '') {
-      try {
-        const persData = JSON.parse(pers)
-        if (persData.personalization_available) {
-          setPersonalized(persData)
-        }
-      } catch (e) {
-        console.warn('Could not parse personalized data')
+  const stored = sessionStorage.getItem('mira_result')
+  if (!stored) {
+    navigate('/assessment')
+    return
+  }
+  setResult(JSON.parse(stored))
+  
+  const pers = sessionStorage.getItem('mira_personalized')
+  if (pers && pers !== '') {
+    try {
+      const persData = JSON.parse(pers)
+      // Always load personalized data — even if gatekeeper rejected
+      // The UI will decide how to display based on use_personalization
+      setPersonalized(persData)
+      
+      // If gatekeeper recommends personalized, default to that view
+      if (persData.use_personalization) {
+        setViewMode('personalized')
       }
+    } catch (e) {
+      console.warn('Could not parse personalized data')
     }
-  }, [navigate])
+  }
+}, [navigate])
 
   if (!result) return null
 
-  const displayProb = (viewMode === 'personalized' && personalized)
-    ? personalized.personalized_probability
-    : result.probability
+// If gatekeeper approved personalization, default to personalized
+// Otherwise always show global
+const displayProb = (viewMode === 'personalized' && personalized?.use_personalization)
+  ? personalized.personalized_probability
+  : result.probability
   
   const pct = Math.round(displayProb * 100)
   const risk = displayProb >= 0.7 ? 'HIGH' : displayProb >= 0.4 ? 'MODERATE' : 'LOW'
@@ -59,31 +66,125 @@ export default function Results() {
         </Link>
 
         {/* Mode toggle */}
-        {personalized && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-10 inline-flex border border-ink-300 bg-paper p-1"
-          >
-            <button
-              onClick={() => setViewMode('standard')}
-              className={`px-5 py-2 text-sm transition-all ${
-                viewMode === 'standard' ? 'bg-ink-900 text-cream' : 'text-ink-600 hover:text-ink-900'
-              }`}
-            >
-              Standard
-            </button>
-            <button
-              onClick={() => setViewMode('personalized')}
-              className={`px-5 py-2 text-sm transition-all inline-flex items-center gap-2 ${
-                viewMode === 'personalized' ? 'bg-ink-900 text-cream' : 'text-ink-600 hover:text-ink-900'
-              }`}
-            >
-              <Sparkles size={14} />
-              Personalized
-            </button>
-          </motion.div>
-        )}
+        {/* Only show toggle if gatekeeper approved personalization */}
+{/* GATEKEEPER APPROVED — Show comparison panel */}
+{personalized && personalized.use_personalization && (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ delay: 0.4 }}
+    className="mb-16 card-elevated border-l-4 border-sage-500"
+  >
+    <div className="flex items-start gap-4 mb-6">
+      <Sparkles className="text-sage-700 flex-shrink-0 mt-1" size={20} />
+      <div className="flex-1">
+        <h3 className="font-display text-2xl text-ink-900 mb-2">
+          Personalization recommended
+        </h3>
+        <p className="text-sm text-ink-600 italic leading-relaxed">
+          {personalized.gatekeeper_reason}
+        </p>
+      </div>
+    </div>
+
+    <div className="grid md:grid-cols-2 gap-px bg-ink-200">
+      <div className="bg-paper p-8">
+        <div className="text-xs uppercase tracking-[0.15em] text-ink-500 mb-3">
+          Standard Prediction
+        </div>
+        <div className="font-display text-5xl text-ink-400 numbered-marker mb-2">
+          {Math.round(result.probability * 100)}<span className="text-2xl">%</span>
+        </div>
+        <div className="text-xs text-ink-500">
+          Global model — may over/under-estimate
+        </div>
+      </div>
+      <div className="bg-paper p-8">
+        <div className="text-xs uppercase tracking-[0.15em] text-sage-700 mb-3">
+          Recommended for you
+        </div>
+        <div className="font-display text-5xl text-sage-700 numbered-marker mb-2">
+          {Math.round(personalized.personalized_probability * 100)}<span className="text-2xl">%</span>
+        </div>
+        <div className="text-xs text-sage-700">
+          Personalized (calibrated to similar patients)
+        </div>
+      </div>
+    </div>
+
+    <div className="mt-6 pt-6 border-t border-ink-200 flex flex-wrap gap-x-10 gap-y-4 text-sm">
+      <div>
+        <span className="text-ink-500">Adjustment: </span>
+        <span className="font-mono text-ink-900">
+          {personalized.adjustment > 0 ? '+' : ''}{Math.round(personalized.adjustment * 100)}%
+        </span>
+      </div>
+      <div>
+        <span className="text-ink-500">Reference: </span>
+        <span className="font-mono text-ink-900">
+          {personalized.similar_patients_count} patients · {personalized.calibration_observations} obs
+        </span>
+      </div>
+      <div>
+        <span className="text-ink-500">Effect: </span>
+        <span className="font-mono text-sage-700">
+          {personalized.effect_level}
+        </span>
+      </div>
+    </div>
+
+    <div className="mt-4 p-4 bg-sage-50 border border-sage-200 text-sm text-sage-900 leading-relaxed">
+      {personalized.interpretation}
+    </div>
+  </motion.div>
+)}
+
+{/* GATEKEEPER REJECTED — Show why we're using global */}
+{personalized && !personalized.use_personalization && personalized.personalization_available && (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ delay: 0.4 }}
+    className="mb-16 p-6 border border-ink-200 bg-paper flex items-start gap-4"
+  >
+    <Info size={20} className="text-ink-600 flex-shrink-0 mt-1" />
+    <div className="flex-1">
+      <p className="font-display text-base text-ink-900 mb-2">
+        Standard model is most reliable for your profile
+      </p>
+      <p className="text-sm text-ink-600 leading-relaxed mb-2">
+        <span className="italic">Reason: </span>{personalized.gatekeeper_reason}
+      </p>
+      <p className="text-sm text-ink-700 leading-relaxed">
+        {personalized.interpretation}
+      </p>
+    </div>
+  </motion.div>
+)}
+
+{/* NO PERSONALIZATION (guest user) */}
+{!personalized && !user && (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    className="mb-16 p-6 border border-ink-300 bg-paper flex items-start gap-4"
+  >
+    <Sparkles size={20} className="text-ink-600 flex-shrink-0 mt-0.5" />
+    <div className="flex-1">
+      <p className="font-display text-lg text-ink-900 mb-2">
+        Get personalized predictions
+      </p>
+      <p className="text-sm text-ink-700 leading-relaxed mb-4">
+        Logged-in users receive predictions calibrated to similar patients
+        using our PS-Cal framework. When personalization is reliable, our
+        gatekeeper recommends it automatically.
+      </p>
+      <Link to="/register" className="link-editorial text-sm">
+        Create a free account →
+      </Link>
+    </div>
+  </motion.div>
+)}
 
         {/* Hero with gauge */}
         <motion.div
@@ -150,8 +251,8 @@ export default function Results() {
                 </h3>
                 <p className="text-sm text-ink-600 italic">
                   Personalization uses Patient-Similarity weighted Calibration (PS-Cal)
-                  from our research. Based on {personalized.similar_patients_count} most
-                  similar patients in our database.
+                  from our research. Fitted on {personalized.calibration_observations} observations
+                  from {personalized.similar_patients_count} most similar patients.
                 </p>
               </div>
             </div>
@@ -189,10 +290,10 @@ export default function Results() {
     </span>
   </div>
   <div>
-    <span className="text-ink-500">Reference patients: </span>
-    <span className="font-mono text-ink-900">
-      {personalized.similar_patients_count} of 43
-    </span>
+  <span className="text-ink-500">Reference patients: </span>
+  <span className="font-mono text-ink-900">
+    {personalized.similar_patients_count} ({personalized.calibration_observations} obs)
+  </span>
   </div>
   <div>
     <span className="text-ink-500">Effect on prediction: </span>
