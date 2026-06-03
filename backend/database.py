@@ -5,10 +5,21 @@ from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent / "mira.db"
-DATABASE_URL = f"sqlite:///{DB_PATH}"
+import os
+from pathlib import Path
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+# Use DATABASE_URL from environment (PostgreSQL on Render), fall back to SQLite locally
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{Path(__file__).parent / 'mira.db'}")
+
+# Render's PostgreSQL URLs start with postgres:// but SQLAlchemy needs postgresql://
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+# Different connect args for PostgreSQL vs SQLite
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

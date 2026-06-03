@@ -12,3 +12,4 @@ python-jose[cryptography]
 bcrypt
 sqlalchemy
 email-validator
+psycopg2-binary
