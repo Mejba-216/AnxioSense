@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, ArrowLeft, Loader2, Check } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { explainPrediction, predictPersonalized } from '../api/predictor'
 import { useAuth } from '../api/AuthContext'
 
+// ... other imports  // make sure useEffect is imported
 // ──────────────────────────────────────────────────────────────────────
 // SECTION 1: PHQ-9 (Depression) — 9 questions, scored 0-3 each, total 0-27
 // ──────────────────────────────────────────────────────────────────────
@@ -214,6 +215,9 @@ export default function Assessment() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
   const { user } = useAuth()
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [stepIdx])
   const step = STEPS[stepIdx]
   const progress = ((stepIdx + 1) / STEPS.length) * 100
 
