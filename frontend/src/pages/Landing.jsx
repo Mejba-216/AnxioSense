@@ -48,7 +48,7 @@ export default function Landing() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
             className="mt-24 grid grid-cols-2 md:grid-cols-4 gap-px bg-ink-200">
             {[
-              { value: '0.920', label: 'AUC under proper evaluation' },
+              { value: '0.918', label: 'AUC under proper evaluation' },
               { value: '43', label: 'Mood disorder patients' },
               { value: '0.806', label: 'F1 score, zero leakage' },
               { value: '27.3%', label: 'Inflation in prior work, exposed' },

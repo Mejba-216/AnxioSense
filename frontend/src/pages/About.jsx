@@ -11,8 +11,11 @@ export default function About() {
             made <em>useful</em>.
           </h1>
           <p className="text-xl text-ink-700 leading-relaxed mb-8">
-            Mira is the public-facing outcome of an undergraduate thesis at
-            BRAC University on multi-modal digital phenotyping.
+Mira is a research-driven digital mental health platform designed to support personalized anxiety monitoring through digital phenotyping. The system combines information from validated clinical assessments, daily emotional states, lifestyle behaviors, and personal background factors to estimate an individual's risk of experiencing elevated anxiety symptoms on the following day.
+
+
+
+Unlike traditional screening tools that rely solely on questionnaire scores, Mira adopts a multimodal approach by integrating multiple sources of information, including mood, energy level, sleep quality, physical activity, and anxiety-related assessments. These data are analyzed using machine learning models to generate personalized risk estimates and provide meaningful insights into factors that may influence mental well-being.
           </p>
         </div>
       </section>
@@ -24,7 +27,7 @@ export default function About() {
           </h2>
           <div className="grid md:grid-cols-4 gap-px bg-ink-200">
             {[
-              { metric: 'AUC', value: '0.920' },
+              { metric: 'AUC', value: '0.918' },
               { metric: 'F1', value: '0.806' },
               { metric: 'Recall', value: '0.802' },
               { metric: 'Precision', value: '0.827' },
