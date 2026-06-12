@@ -11,7 +11,7 @@ export default function About() {
             made <em>useful</em>.
           </h1>
           <p className="text-xl text-ink-700 leading-relaxed mb-8">
-Mira is a research-driven digital mental health platform designed to support personalized anxiety monitoring through digital phenotyping. The system combines information from validated clinical assessments, daily emotional states, lifestyle behaviors, and personal background factors to estimate an individual's risk of experiencing elevated anxiety symptoms on the following day.
+Mira is a research driven digital mental health platform designed to support personalized anxiety monitoring through digital phenotyping. The system combines information from validated clinical assessments, daily emotional states, lifestyle behaviors, and personal background factors to estimate an individual's risk of experiencing elevated anxiety symptoms on the following day.
 
 
 
